@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Container,
@@ -12,7 +12,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import api from '../config/api';
 
-function Login() {
+const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -23,10 +23,27 @@ function Login() {
   const { login } = useAuth();
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value.trim()
+    }));
+  };
+
+  const validateForm = () => {
+    if (!formData.email) {
+      setError('Email is required');
+      return false;
+    }
+    if (!formData.password) {
+      setError('Password is required');
+      return false;
+    }
+    if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      setError('Please enter a valid email address');
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async (e) => {
@@ -34,46 +51,25 @@ function Login() {
     setError('');
     setLoading(true);
 
+    if (!validateForm()) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Validate form data
-      if (!formData.email || !formData.password) {
-        setError('Please provide email and password');
-        setLoading(false);
-        return;
-      }
-
-      // Log the request data
-      console.log('Sending login request with:', {
-        email: formData.email.trim(),
-        password: formData.password
-      });
-
-      const response = await api.post('/auth/login', {
-        email: formData.email.trim(),
-        password: formData.password
-      });
-
+      console.log('Sending login request with:', formData);
+      const response = await api.post('/auth/login', formData);
       console.log('Login response:', response.data);
 
-      const { token, user } = response.data;
-      
-      // Store auth data
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-      
-      // Update auth context
-      await login(user.email, user.password);
-      
-      // Navigate to dashboard
-      navigate('/');
-    } catch (error) {
-      console.error('Login error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        config: error.config
-      });
-      setError(error.response?.data?.message || 'Failed to login');
+      if (response.data.token) {
+        await login(response.data.token, response.data.user);
+        navigate('/dashboard');
+      } else {
+        setError('Invalid response from server');
+      }
+    } catch (err) {
+      console.error('Login error details:', err);
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -166,6 +162,6 @@ function Login() {
       </Box>
     </Container>
   );
-}
+};
 
 export default Login; 
