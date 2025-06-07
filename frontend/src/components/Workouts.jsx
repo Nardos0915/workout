@@ -15,11 +15,20 @@ import {
   FormControl,
   InputLabel,
   CircularProgress,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  InputAdornment,
+  Tooltip,
 } from '@mui/material';
 import {
   Delete as DeleteIcon,
-  AccessTime,
+  Edit as EditIcon,
   Search as SearchIcon,
+  Add as AddIcon,
+  FitnessCenter as FitnessIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import api from '../config/api';
@@ -29,7 +38,8 @@ const Workouts = () => {
   const [workouts, setWorkouts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [openDialog, setOpenDialog] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     exercises: [{ name: '', sets: '', reps: '', weight: '' }]
@@ -49,9 +59,7 @@ const Workouts = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching workouts...');
       const response = await api.get('/workouts');
-      console.log('Workouts fetched:', response.data);
       setWorkouts(response.data);
     } catch (err) {
       console.error('Error fetching workouts:', err);
@@ -86,57 +94,18 @@ const Workouts = () => {
     }));
   };
 
-  const validateForm = () => {
-    if (!formData.name.trim()) {
-      setError('Workout name is required');
-      return false;
-    }
-
-    if (formData.exercises.length === 0) {
-      setError('At least one exercise is required');
-      return false;
-    }
-
-    for (const exercise of formData.exercises) {
-      if (!exercise.name.trim()) {
-        setError('Exercise name is required');
-        return false;
-      }
-      if (!exercise.sets || exercise.sets < 1) {
-        setError('Sets must be at least 1');
-        return false;
-      }
-      if (!exercise.reps || exercise.reps < 1) {
-        setError('Reps must be at least 1');
-        return false;
-      }
-      if (exercise.weight && exercise.weight < 0) {
-        setError('Weight cannot be negative');
-        return false;
-      }
-    }
-
-    return true;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
 
-    if (!validateForm()) {
-      return;
-    }
-
     try {
-      console.log('Creating workout with data:', formData);
       const response = await api.post('/workouts', formData);
-      console.log('Workout created:', response.data);
       setWorkouts(prev => [response.data, ...prev]);
       setFormData({
         name: '',
         exercises: [{ name: '', sets: '', reps: '', weight: '' }]
       });
-      setShowForm(false);
+      setOpenDialog(false);
     } catch (err) {
       console.error('Error creating workout:', err);
       setError(err.response?.data?.message || 'Error creating workout');
@@ -149,9 +118,7 @@ const Workouts = () => {
     }
 
     try {
-      console.log('Deleting workout:', id);
       await api.delete(`/workouts/${id}`);
-      console.log('Workout deleted successfully');
       setWorkouts(prev => prev.filter(workout => workout._id !== id));
     } catch (err) {
       console.error('Error deleting workout:', err);
@@ -159,169 +126,246 @@ const Workouts = () => {
     }
   };
 
+  const filteredWorkouts = workouts.filter(workout =>
+    workout.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    workout.exercises.some(exercise => 
+      exercise.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  );
+
   if (loading) {
-    return <div className="text-center">Loading...</div>;
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">My Workouts</h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          My Workouts
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setOpenDialog(true)}
+          sx={{
+            bgcolor: 'primary.main',
+            '&:hover': {
+              bgcolor: 'primary.dark',
+            },
+          }}
         >
-          {showForm ? 'Cancel' : 'Add Workout'}
-        </button>
-      </div>
+          Add Workout
+        </Button>
+      </Box>
+
+      <TextField
+        fullWidth
+        variant="outlined"
+        placeholder="Search workouts or exercises..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        sx={{ mb: 4 }}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchIcon />
+            </InputAdornment>
+          ),
+        }}
+      />
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <Typography color="error" sx={{ mb: 2 }}>
           {error}
-        </div>
+        </Typography>
       )}
 
-      {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">
-              Workout Name
-            </label>
-            <input
-              type="text"
+      <Grid container spacing={3}>
+        {filteredWorkouts.map(workout => (
+          <Grid item xs={12} sm={6} md={4} key={workout._id}>
+            <Card
+              sx={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                bgcolor: 'background.paper',
+                transition: 'transform 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: 3,
+                },
+              }}
+            >
+              <CardContent sx={{ flexGrow: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                  <Typography variant="h6" component="h2" gutterBottom>
+                    {workout.name}
+                  </Typography>
+                  <Box>
+                    <Tooltip title="Edit">
+                      <IconButton size="small" sx={{ mr: 1 }}>
+                        <EditIcon />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete">
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleDelete(workout._id)}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Box>
+
+                <Chip
+                  icon={<FitnessIcon />}
+                  label={format(new Date(workout.createdAt), 'MMM d, yyyy')}
+                  size="small"
+                  sx={{ mb: 2 }}
+                />
+
+                {workout.exercises.map((exercise, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      mb: 1,
+                      p: 1,
+                      borderRadius: 1,
+                      bgcolor: 'rgba(124, 77, 255, 0.1)',
+                    }}
+                  >
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      {exercise.name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {exercise.sets} sets × {exercise.reps} reps
+                      {exercise.weight && ` @ ${exercise.weight}kg`}
+                    </Typography>
+                  </Box>
+                ))}
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Create New Workout</DialogTitle>
+        <form onSubmit={handleSubmit}>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Workout Name"
+              fullWidth
               name="name"
               value={formData.name}
               onChange={(e) => handleInputChange(e)}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              placeholder="Enter workout name"
+              required
+              sx={{ mb: 2 }}
             />
-          </div>
 
-          {formData.exercises.map((exercise, index) => (
-            <div key={index} className="mb-4 p-4 border rounded">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-lg font-semibold">Exercise {index + 1}</h3>
-                {index > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => removeExercise(index)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
+            {formData.exercises.map((exercise, index) => (
+              <Box
+                key={index}
+                sx={{
+                  mb: 2,
+                  p: 2,
+                  borderRadius: 1,
+                  bgcolor: 'rgba(124, 77, 255, 0.05)',
+                }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                  <Typography variant="subtitle1">Exercise {index + 1}</Typography>
+                  {index > 0 && (
+                    <Button
+                      size="small"
+                      color="error"
+                      onClick={() => removeExercise(index)}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </Box>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
-                    Exercise Name
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={exercise.name}
-                    onChange={(e) => handleInputChange(e, index)}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    placeholder="Enter exercise name"
-                  />
-                </div>
+                <Grid container spacing={2}>
+                  <Grid item xs={12}>
+                    <TextField
+                      label="Exercise Name"
+                      fullWidth
+                      name="name"
+                      value={exercise.name}
+                      onChange={(e) => handleInputChange(e, index)}
+                      required
+                    />
+                  </Grid>
+                  <Grid item xs={4}>
+                    <TextField
+                      label="Sets"
+                      type="number"
+                      fullWidth
+                      name="sets"
+                      value={exercise.sets}
+                      onChange={(e) => handleInputChange(e, index)}
+                      required
+                      inputProps={{ min: 1 }}
+                    />
+                  </Grid>
+                  <Grid item xs={4}>
+                    <TextField
+                      label="Reps"
+                      type="number"
+                      fullWidth
+                      name="reps"
+                      value={exercise.reps}
+                      onChange={(e) => handleInputChange(e, index)}
+                      required
+                      inputProps={{ min: 1 }}
+                    />
+                  </Grid>
+                  <Grid item xs={4}>
+                    <TextField
+                      label="Weight (kg)"
+                      type="number"
+                      fullWidth
+                      name="weight"
+                      value={exercise.weight}
+                      onChange={(e) => handleInputChange(e, index)}
+                      inputProps={{ min: 0 }}
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
+            ))}
 
-                <div>
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
-                    Sets
-                  </label>
-                  <input
-                    type="number"
-                    name="sets"
-                    value={exercise.sets}
-                    onChange={(e) => handleInputChange(e, index)}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    placeholder="Number of sets"
-                    min="1"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
-                    Reps
-                  </label>
-                  <input
-                    type="number"
-                    name="reps"
-                    value={exercise.reps}
-                    onChange={(e) => handleInputChange(e, index)}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    placeholder="Number of reps"
-                    min="1"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-gray-700 text-sm font-bold mb-2">
-                    Weight (optional)
-                  </label>
-                  <input
-                    type="number"
-                    name="weight"
-                    value={exercise.weight}
-                    onChange={(e) => handleInputChange(e, index)}
-                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                    placeholder="Weight in kg"
-                    min="0"
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
-
-          <div className="flex justify-between items-center">
-            <button
+            <Button
               type="button"
               onClick={addExercise}
-              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+              startIcon={<AddIcon />}
+              sx={{ mt: 1 }}
             >
               Add Exercise
-            </button>
-
-            <button
+            </Button>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
+            <Button
               type="submit"
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              variant="contained"
+              disabled={!formData.name || formData.exercises.some(ex => !ex.name || !ex.sets || !ex.reps)}
             >
-              Save Workout
-            </button>
-          </div>
+              Create Workout
+            </Button>
+          </DialogActions>
         </form>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {workouts.map(workout => (
-          <div key={workout._id} className="bg-white shadow-md rounded p-4">
-            <div className="flex justify-between items-start mb-4">
-              <h2 className="text-xl font-bold">{workout.name}</h2>
-              <button
-                onClick={() => handleDelete(workout._id)}
-                className="text-red-500 hover:text-red-700"
-              >
-                Delete
-              </button>
-            </div>
-
-            <div className="space-y-2">
-              {workout.exercises.map((exercise, index) => (
-                <div key={index} className="border-b pb-2">
-                  <h3 className="font-semibold">{exercise.name}</h3>
-                  <p className="text-gray-600">
-                    {exercise.sets} sets × {exercise.reps} reps
-                    {exercise.weight ? ` @ ${exercise.weight}kg` : ''}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+      </Dialog>
+    </Container>
   );
 };
 
