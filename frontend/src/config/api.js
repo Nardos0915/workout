@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://workout-tracker-backend-2.onrender.com/api';
+const API_URL = 'https://workout-tracker-backend-tjb1.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_URL,
