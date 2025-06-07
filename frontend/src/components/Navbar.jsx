@@ -1,176 +1,75 @@
-import { useNavigate, Link } from 'react-router-dom';
-import {
-  AppBar,
-  Toolbar,
-  Typography,
-  Button,
-  Box,
-  Drawer,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  IconButton,
-  useTheme,
-  useMediaQuery,
-} from '@mui/material';
-import {
-  FitnessCenter,
-  Dashboard as DashboardIcon,
-  List as ListIcon,
-  Logout,
-  Menu as MenuIcon,
-} from '@mui/icons-material';
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useState } from 'react';
 
-function Navbar() {
+const Navbar = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-    { text: 'Workouts', icon: <ListIcon />, path: '/workouts' },
-  ];
-
-  const drawer = (
-    <Box sx={{ width: 240, bgcolor: 'background.paper', height: '100%' }}>
-      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <FitnessCenter sx={{ color: 'primary.main' }} />
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          Workout Tracker
-        </Typography>
-      </Box>
-      <List>
-        {menuItems.map((item) => (
-          <ListItem
-            key={item.text}
-            component={Link}
-            to={item.path}
-            sx={{
-              color: 'text.primary',
-              '&:hover': {
-                bgcolor: 'rgba(124, 77, 255, 0.1)',
-              },
-            }}
-          >
-            <ListItemIcon sx={{ color: 'inherit' }}>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.text} />
-          </ListItem>
-        ))}
-        <ListItem
-          onClick={handleLogout}
-          sx={{
-            color: 'error.main',
-            cursor: 'pointer',
-            '&:hover': {
-              bgcolor: 'rgba(211, 47, 47, 0.08)',
-            },
-          }}
-        >
-          <ListItemIcon sx={{ color: 'inherit' }}>
-            <Logout />
-          </ListItemIcon>
-          <ListItemText primary="Logout" />
-        </ListItem>
-      </List>
-    </Box>
-  );
-
   return (
-    <>
-      <AppBar
-        position="fixed"
-        sx={{
-          width: { sm: `calc(100% - 240px)` },
-          ml: { sm: '240px' },
-          bgcolor: 'background.paper',
-          boxShadow: 'none',
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-        }}
-      >
-        <Toolbar>
-          {isMobile && (
-            <IconButton
-              color="inherit"
-              aria-label="open drawer"
-              edge="start"
-              onClick={handleDrawerToggle}
-              sx={{ mr: 2 }}
-            >
-              <MenuIcon />
-            </IconButton>
-          )}
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            {user ? `Welcome, ${user.name}` : 'Workout Tracker'}
-          </Typography>
-          {!user && (
-            <Box>
-              <Button color="inherit" component={Link} to="/login">
-                Login
-              </Button>
-              <Button color="inherit" component={Link} to="/signup">
-                Sign Up
-              </Button>
-            </Box>
-          )}
-        </Toolbar>
-      </AppBar>
-      <Box
-        component="nav"
-        sx={{ width: { sm: 240 }, flexShrink: { sm: 0 } }}
-      >
-        {isMobile ? (
-          <Drawer
-            variant="temporary"
-            open={mobileOpen}
-            onClose={handleDrawerToggle}
-            ModalProps={{
-              keepMounted: true,
-            }}
-            sx={{
-              '& .MuiDrawer-paper': {
-                boxSizing: 'border-box',
-                width: 240,
-                bgcolor: 'background.paper',
-              },
-            }}
-          >
-            {drawer}
-          </Drawer>
-        ) : (
-          <Drawer
-            variant="permanent"
-            sx={{
-              '& .MuiDrawer-paper': {
-                boxSizing: 'border-box',
-                width: 240,
-                bgcolor: 'background.paper',
-                borderRight: '1px solid',
-                borderColor: 'divider',
-              },
-            }}
-            open
-          >
-            {drawer}
-          </Drawer>
-        )}
-      </Box>
-    </>
+    <nav className="bg-white shadow-lg">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex">
+            <div className="flex-shrink-0 flex items-center">
+              <Link to="/" className="text-xl font-bold text-blue-600">
+                Workout Tracker
+              </Link>
+            </div>
+            {user && (
+              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+                <Link
+                  to="/dashboard"
+                  className="border-transparent text-gray-500 hover:border-blue-500 hover:text-blue-600 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/workouts"
+                  className="border-transparent text-gray-500 hover:border-blue-500 hover:text-blue-600 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                >
+                  Workouts
+                </Link>
+              </div>
+            )}
+          </div>
+          <div className="hidden sm:ml-6 sm:flex sm:items-center">
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <span className="text-gray-700">{user.name}</span>
+                <button
+                  onClick={handleLogout}
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-4">
+                <Link
+                  to="/login"
+                  className="text-gray-500 hover:text-blue-600"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </nav>
   );
-}
+};
 
 export default Navbar; 
