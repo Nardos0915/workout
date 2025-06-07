@@ -6,101 +6,123 @@ const auth = require('../middleware/auth');
 // Get all workouts for a user
 router.get('/', auth, async (req, res) => {
   try {
-    const workouts = await Workout.find({ user: req.user.userId })
-      .sort({ createdAt: -1 });
+    console.log('Fetching workouts for user:', req.user.id);
+    const workouts = await Workout.find({ user: req.user.id }).sort({ createdAt: -1 });
+    console.log(`Found ${workouts.length} workouts`);
     res.json(workouts);
-  } catch (error) {
-    console.error('Error fetching workouts:', error);
-    res.status(500).json({ message: 'Error fetching workouts', error: error.message });
+  } catch (err) {
+    console.error('Error fetching workouts:', err);
+    res.status(500).json({ message: 'Error fetching workouts' });
   }
 });
 
 // Create a new workout
 router.post('/', auth, async (req, res) => {
   try {
+    console.log('Creating workout for user:', req.user.id);
+    console.log('Workout data:', req.body);
+
     const { name, exercises } = req.body;
 
     // Validate required fields
-    if (!name || !exercises || !Array.isArray(exercises) || exercises.length === 0) {
-      return res.status(400).json({ message: 'Name and at least one exercise are required' });
+    if (!name) {
+      return res.status(400).json({ message: 'Workout name is required' });
     }
 
-    // Validate exercises
-    for (const exercise of exercises) {
-      if (!exercise.name || !exercise.sets || !exercise.reps) {
-        return res.status(400).json({ message: 'Each exercise must have a name, sets, and reps' });
-      }
+    if (!exercises || !Array.isArray(exercises) || exercises.length === 0) {
+      return res.status(400).json({ message: 'At least one exercise is required' });
     }
 
+    // Create new workout
     const workout = new Workout({
+      user: req.user.id,
       name,
-      exercises,
-      user: req.user.userId,
-      createdAt: new Date()
+      exercises: exercises.map(exercise => ({
+        name: exercise.name,
+        sets: exercise.sets,
+        reps: exercise.reps,
+        weight: exercise.weight || null
+      }))
     });
 
-    await workout.save();
-    res.status(201).json(workout);
-  } catch (error) {
-    console.error('Error creating workout:', error);
-    res.status(500).json({ message: 'Error creating workout', error: error.message });
+    // Save workout
+    const savedWorkout = await workout.save();
+    console.log('Workout created successfully:', savedWorkout._id);
+    res.status(201).json(savedWorkout);
+  } catch (err) {
+    console.error('Error creating workout:', err);
+    res.status(500).json({ 
+      message: 'Error creating workout',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
 // Update a workout
 router.put('/:id', auth, async (req, res) => {
   try {
+    console.log('Updating workout:', req.params.id);
+    console.log('Update data:', req.body);
+
     const { name, exercises } = req.body;
 
     // Validate required fields
-    if (!name || !exercises || !Array.isArray(exercises) || exercises.length === 0) {
-      return res.status(400).json({ message: 'Name and at least one exercise are required' });
+    if (!name) {
+      return res.status(400).json({ message: 'Workout name is required' });
     }
 
-    // Validate exercises
-    for (const exercise of exercises) {
-      if (!exercise.name || !exercise.sets || !exercise.reps) {
-        return res.status(400).json({ message: 'Each exercise must have a name, sets, and reps' });
-      }
+    if (!exercises || !Array.isArray(exercises) || exercises.length === 0) {
+      return res.status(400).json({ message: 'At least one exercise is required' });
     }
 
+    // Find and update workout
     const workout = await Workout.findOneAndUpdate(
-      { _id: req.params.id, user: req.user.userId },
+      { _id: req.params.id, user: req.user.id },
       {
         name,
-        exercises,
-        updatedAt: new Date()
+        exercises: exercises.map(exercise => ({
+          name: exercise.name,
+          sets: exercise.sets,
+          reps: exercise.reps,
+          weight: exercise.weight || null
+        }))
       },
       { new: true }
     );
-    
+
     if (!workout) {
       return res.status(404).json({ message: 'Workout not found' });
     }
-    
+
+    console.log('Workout updated successfully:', workout._id);
     res.json(workout);
-  } catch (error) {
-    console.error('Error updating workout:', error);
-    res.status(500).json({ message: 'Error updating workout', error: error.message });
+  } catch (err) {
+    console.error('Error updating workout:', err);
+    res.status(500).json({ 
+      message: 'Error updating workout',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
 // Delete a workout
 router.delete('/:id', auth, async (req, res) => {
   try {
-    const workout = await Workout.findOneAndDelete({
-      _id: req.params.id,
-      user: req.user.userId
-    });
-    
+    console.log('Deleting workout:', req.params.id);
+    const workout = await Workout.findOneAndDelete({ _id: req.params.id, user: req.user.id });
+
     if (!workout) {
       return res.status(404).json({ message: 'Workout not found' });
     }
-    
-    res.json({ message: 'Workout deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting workout:', error);
-    res.status(500).json({ message: 'Error deleting workout', error: error.message });
+
+    console.log('Workout deleted successfully:', req.params.id);
+    res.json({ message: 'Workout deleted' });
+  } catch (err) {
+    console.error('Error deleting workout:', err);
+    res.status(500).json({ 
+      message: 'Error deleting workout',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
