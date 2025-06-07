@@ -9,6 +9,11 @@ router.post('/signup', async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
+    // Validate input
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Please provide all required fields' });
+    }
+
     // Check if user already exists
     let user = await User.findOne({ email });
     if (user) {
@@ -41,13 +46,23 @@ router.post('/signup', async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '24h' },
       (err, token) => {
-        if (err) throw err;
-        res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
+        if (err) {
+          console.error('JWT Sign Error:', err);
+          return res.status(500).json({ message: 'Error creating token' });
+        }
+        res.json({ 
+          token, 
+          user: { 
+            id: user.id, 
+            name: user.name, 
+            email: user.email 
+          } 
+        });
       }
     );
   } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Signup Error:', err);
+    res.status(500).json({ message: 'Server error during signup' });
   }
 });
 
@@ -55,6 +70,11 @@ router.post('/signup', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Please provide email and password' });
+    }
 
     // Check if user exists
     const user = await User.findOne({ email });
@@ -80,13 +100,23 @@ router.post('/login', async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: '24h' },
       (err, token) => {
-        if (err) throw err;
-        res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
+        if (err) {
+          console.error('JWT Sign Error:', err);
+          return res.status(500).json({ message: 'Error creating token' });
+        }
+        res.json({ 
+          token, 
+          user: { 
+            id: user.id, 
+            name: user.name, 
+            email: user.email 
+          } 
+        });
       }
     );
   } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Login Error:', err);
+    res.status(500).json({ message: 'Server error during login' });
   }
 });
 
