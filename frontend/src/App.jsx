@@ -1,84 +1,45 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import { Box } from '@mui/material';
-import Navbar from './components/Navbar';
+import { Box, CssBaseline } from '@mui/material';
+import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './context/AuthContext';
 import Login from './components/Login';
 import Signup from './components/Signup';
 import Dashboard from './components/Dashboard';
 import Workouts from './components/Workouts';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import Navbar from './components/Navbar';
 
+// Create theme
 const theme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
       main: '#7C4DFF',
-      light: '#B47CFF',
-      dark: '#3F1DCB',
-    },
-    secondary: {
-      main: '#FF4081',
-      light: '#FF79B0',
-      dark: '#C60055',
     },
     background: {
-      default: '#0A0A0A',
-      paper: '#1A1A1A',
+      default: '#121212',
+      paper: '#1E1E1E',
     },
   },
   typography: {
     fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-    h1: {
-      fontWeight: 700,
-    },
-    h2: {
-      fontWeight: 700,
-    },
-    h3: {
-      fontWeight: 700,
-    },
-    h4: {
-      fontWeight: 700,
-    },
-    h5: {
-      fontWeight: 700,
-    },
-    h6: {
-      fontWeight: 700,
-    },
   },
   components: {
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 12,
           textTransform: 'none',
-          fontWeight: 600,
-          padding: '10px 24px',
+          borderRadius: 8,
         },
       },
     },
     MuiCard: {
       styleOverrides: {
         root: {
-          borderRadius: 16,
+          borderRadius: 12,
+          background: 'linear-gradient(145deg, #1E1E1E 0%, #2D2D2D 100%)',
           boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-          transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-          '&:hover': {
-            transform: 'translateY(-4px)',
-            boxShadow: '0 6px 12px rgba(0, 0, 0, 0.15)',
-          },
-        },
-      },
-    },
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          '& .MuiOutlinedInput-root': {
-            borderRadius: 12,
-          },
         },
       },
     },
@@ -104,8 +65,8 @@ const App = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AuthProvider>
-        <Router>
+      <Router>
+        <AuthProvider>
           <Box sx={{ display: 'flex', minHeight: '100vh' }}>
             <Navbar />
             <Box
@@ -115,8 +76,7 @@ const App = () => {
                 p: 3,
                 width: { sm: `calc(100% - 240px)` },
                 ml: { sm: '240px' },
-                background: 'linear-gradient(135deg, #0A0A0A 0%, #1A1A1A 100%)',
-                minHeight: '100vh',
+                mt: '64px',
               }}
             >
               <Routes>
@@ -142,8 +102,8 @@ const App = () => {
               </Routes>
             </Box>
           </Box>
-        </Router>
-      </AuthProvider>
+        </AuthProvider>
+      </Router>
     </ThemeProvider>
   );
 };
