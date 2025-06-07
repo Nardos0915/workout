@@ -7,10 +7,12 @@ const User = require('../models/User');
 // Register
 router.post('/signup', async (req, res) => {
   try {
+    console.log('Signup request body:', req.body);
     const { name, email, password } = req.body;
 
     // Validate input
     if (!name || !email || !password) {
+      console.log('Missing required fields:', { name: !!name, email: !!email, password: !!password });
       return res.status(400).json({ message: 'Please provide all required fields' });
     }
 
@@ -69,22 +71,26 @@ router.post('/signup', async (req, res) => {
 // Login
 router.post('/login', async (req, res) => {
   try {
+    console.log('Login request body:', req.body);
     const { email, password } = req.body;
 
     // Validate input
     if (!email || !password) {
+      console.log('Missing required fields:', { email: !!email, password: !!password });
       return res.status(400).json({ message: 'Please provide email and password' });
     }
 
     // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
+      console.log('User not found:', email);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
     // Check password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      console.log('Invalid password for user:', email);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
@@ -104,6 +110,7 @@ router.post('/login', async (req, res) => {
           console.error('JWT Sign Error:', err);
           return res.status(500).json({ message: 'Error creating token' });
         }
+        console.log('Login successful for user:', email);
         res.json({ 
           token, 
           user: { 

@@ -35,12 +35,44 @@ function Login() {
     setLoading(true);
 
     try {
-      const response = await api.post('/auth/login', formData);
+      // Validate form data
+      if (!formData.email || !formData.password) {
+        setError('Please provide email and password');
+        setLoading(false);
+        return;
+      }
+
+      // Log the request data
+      console.log('Sending login request with:', {
+        email: formData.email.trim(),
+        password: formData.password
+      });
+
+      const response = await api.post('/auth/login', {
+        email: formData.email.trim(),
+        password: formData.password
+      });
+
+      console.log('Login response:', response.data);
+
       const { token, user } = response.data;
+      
+      // Store auth data
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      // Update auth context
       await login(user.email, user.password);
+      
+      // Navigate to dashboard
       navigate('/');
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        config: error.config
+      });
       setError(error.response?.data?.message || 'Failed to login');
     } finally {
       setLoading(false);
@@ -87,6 +119,9 @@ function Login() {
               required
               margin="normal"
               variant="outlined"
+              error={!!error}
+              helperText={error && formData.email === '' ? 'Email is required' : ''}
+              autoComplete="email"
             />
             <TextField
               fullWidth
@@ -98,6 +133,9 @@ function Login() {
               required
               margin="normal"
               variant="outlined"
+              error={!!error}
+              helperText={error && formData.password === '' ? 'Password is required' : ''}
+              autoComplete="current-password"
             />
             <Button
               type="submit"

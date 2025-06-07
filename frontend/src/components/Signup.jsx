@@ -21,7 +21,7 @@ function Signup() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { signup } = useAuth();
 
   const handleChange = (e) => {
     setFormData({
@@ -36,11 +36,43 @@ function Signup() {
     setLoading(true);
 
     try {
-      const response = await api.post('/auth/signup', formData);
-      login(response.data.token, response.data.user);
+      // Validate form data
+      if (!formData.name || !formData.email || !formData.password) {
+        setError('Please fill in all fields');
+        setLoading(false);
+        return;
+      }
+
+      // Log the request data
+      console.log('Sending signup request with:', {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        password: formData.password
+      });
+
+      const response = await api.post('/auth/signup', {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        password: formData.password
+      });
+
+      console.log('Signup response:', response.data);
+
+      const { token, user } = response.data;
+      
+      // Store auth data
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      
+      // Navigate to dashboard
       navigate('/');
     } catch (error) {
-      console.error('Signup error:', error);
+      console.error('Signup error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        config: error.config
+      });
       setError(error.response?.data?.message || 'Failed to sign up');
     } finally {
       setLoading(false);
@@ -86,6 +118,9 @@ function Signup() {
               required
               margin="normal"
               variant="outlined"
+              error={!!error}
+              helperText={error && formData.name === '' ? 'Name is required' : ''}
+              autoComplete="name"
             />
             <TextField
               fullWidth
@@ -97,6 +132,9 @@ function Signup() {
               required
               margin="normal"
               variant="outlined"
+              error={!!error}
+              helperText={error && formData.email === '' ? 'Email is required' : ''}
+              autoComplete="email"
             />
             <TextField
               fullWidth
@@ -108,6 +146,9 @@ function Signup() {
               required
               margin="normal"
               variant="outlined"
+              error={!!error}
+              helperText={error && formData.password === '' ? 'Password is required' : ''}
+              autoComplete="new-password"
             />
             <Button
               type="submit"
