@@ -1,39 +1,27 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const dotenv = require('dotenv');
+const authRoutes = require('./routes/auth');
+const workoutRoutes = require('./routes/workouts');
 
-// Load environment variables
-dotenv.config();
-
-// Create Express app
 const app = express();
 
-const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || [];
-
 // Middleware
+app.use(express.json());
 app.use(cors({
-  origin: function (origin, callback) {
-    // allow requests with no origin (like mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      return callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173'],
   credentials: true
 }));
-app.use(express.json());
 
-// MongoDB Connection
+// Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('MongoDB connected successfully'))
+  .then(() => console.log('Connected to MongoDB'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
 // Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/workouts', require('./routes/workouts'));
+app.use('/api/auth', authRoutes);
+app.use('/api/workouts', workoutRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
