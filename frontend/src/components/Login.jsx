@@ -36,7 +36,8 @@ function Login() {
 
     try {
       const response = await api.post('/auth/login', formData);
-      login(response.data.token, response.data.user);
+      const { token, user } = response.data;
+      await login(user.email, user.password);
       navigate('/');
     } catch (error) {
       console.error('Login error:', error);
