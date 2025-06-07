@@ -35,6 +35,7 @@ router.post('/signup', async (req, res) => {
 
     // Save user
     await user.save();
+    console.log('User created successfully:', { id: user.id, email: user.email });
 
     // Create JWT token
     const payload = {
@@ -82,13 +83,18 @@ router.post('/login', async (req, res) => {
 
     // Check if user exists
     const user = await User.findOne({ email });
+    console.log('User lookup result:', user ? 'User found' : 'User not found');
+
     if (!user) {
       console.log('User not found:', email);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
     // Check password
+    console.log('Comparing passwords...');
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log('Password match result:', isMatch);
+
     if (!isMatch) {
       console.log('Invalid password for user:', email);
       return res.status(400).json({ message: 'Invalid credentials' });
